@@ -2,6 +2,7 @@ package com.example.demo.models;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.time.Period;
 
 @Entity
 @Table
@@ -17,6 +18,7 @@ public class Users {
             generator = "user_sequence"
     )
     private long id;
+    @Transient
     private Integer age;
     private LocalDate birthDate;
     @Column(unique=true)
@@ -30,14 +32,12 @@ public class Users {
 
     public Users(
             long id,
-            Integer age,
             LocalDate birthDate,
             String email,
             String username,
             String fullName
     ) {
         this.id = id;
-        this.age = age;
         this.birthDate = birthDate;
         this.email = email;
         this.username = username;
@@ -45,13 +45,11 @@ public class Users {
     }
 
     public Users(
-            Integer age,
             LocalDate birthDate,
             String email,
             String username,
             String fullName
     ) {
-        this.age = age;
         this.birthDate = birthDate;
         this.email = email;
         this.username = username;
@@ -63,7 +61,7 @@ public class Users {
     }
 
     public Integer getAge() {
-        return age;
+        return Period.between(birthDate, LocalDate.now()).getYears();
     }
 
     public LocalDate getBirthDate() {

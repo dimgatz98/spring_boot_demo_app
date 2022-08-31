@@ -16,7 +16,6 @@ public class UserConfig {
     CommandLineRunner commandLineRunner(UserRepository repository) {
         return args -> {
             Users dimitris = new Users(
-                    1L,
                     23,
                     LocalDate.of(
                             1998,
@@ -29,7 +28,6 @@ public class UserConfig {
             );
 
             Users giwrgos = new Users(
-                    2L,
                     23,
                     LocalDate.of(
                             1998,

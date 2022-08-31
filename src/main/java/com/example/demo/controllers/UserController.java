@@ -3,9 +3,7 @@ package com.example.demo.controllers;
 import com.example.demo.models.Users;
 import com.example.demo.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -21,7 +19,12 @@ public class UserController {
     }
 
     @GetMapping
-    public List<Users> getStudents() {
+    public List<Users> getUsers() {
         return this.userService.getUsers();
+    }
+
+    @PostMapping
+    public void register(@RequestBody Users user) {
+        userService.addUser(user);
     }
 }
