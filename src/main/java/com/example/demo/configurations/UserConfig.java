@@ -16,7 +16,6 @@ public class UserConfig {
     CommandLineRunner commandLineRunner(UserRepository repository) {
         return args -> {
             Users dimitris = new Users(
-                    23,
                     LocalDate.of(
                             1998,
                             10,
@@ -24,11 +23,11 @@ public class UserConfig {
                     ),
                     "dimgatz98@gmail.com",
                     "tzourhs",
-                    "dimitrios gkatziouras"
+                    "dimitrios gkatziouras",
+                    "test"
             );
 
             Users giwrgos = new Users(
-                    23,
                     LocalDate.of(
                             1998,
                             1,
@@ -36,7 +35,8 @@ public class UserConfig {
                     ),
                     "giwrgos98@gmail.com",
                     "giwrgos",
-                    "giwrgos papandreou"
+                    "giwrgos papandreou",
+                    "test"
             );
 
             repository.saveAll(List.of(dimitris, giwrgos));

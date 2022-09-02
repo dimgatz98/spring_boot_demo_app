@@ -1,5 +1,8 @@
 package com.example.demo.models;
 
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import javax.persistence.*;
 import java.time.LocalDate;
 import java.time.Period;
@@ -18,14 +21,17 @@ public class Users {
             generator = "user_sequence"
     )
     private long id;
+
     @Transient
     private Integer age;
     private LocalDate birthDate;
-    @Column(unique=true)
+    @Column(unique = true)
     private String email;
-    @Column(unique=true)
+    @Column(unique = true)
     private String username;
     private String fullName;
+
+    private String password;
 
     public Users() {
     }
@@ -35,25 +41,33 @@ public class Users {
             LocalDate birthDate,
             String email,
             String username,
-            String fullName
+            String fullName,
+            String password
     ) {
         this.id = id;
         this.birthDate = birthDate;
         this.email = email;
         this.username = username;
         this.fullName = fullName;
+        PasswordEncoder passwordEncoder =
+                PasswordEncoderFactories.createDelegatingPasswordEncoder();
+        this.password = passwordEncoder.encode(password);
     }
 
     public Users(
             LocalDate birthDate,
             String email,
             String username,
-            String fullName
+            String fullName,
+            String password
     ) {
         this.birthDate = birthDate;
         this.email = email;
         this.username = username;
         this.fullName = fullName;
+        PasswordEncoder passwordEncoder =
+                PasswordEncoderFactories.createDelegatingPasswordEncoder();
+        this.password = passwordEncoder.encode(password);
     }
 
     public long getId() {
@@ -78,6 +92,16 @@ public class Users {
 
     public String getFullName() {
         return fullName;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        PasswordEncoder passwordEncoder =
+                PasswordEncoderFactories.createDelegatingPasswordEncoder();
+        this.password = passwordEncoder.encode(password);
     }
 
     public void setId(long id) {

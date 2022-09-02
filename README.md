@@ -15,7 +15,7 @@ And in the postgres client:
 postgres=# \password postgres;
 -- create and grant permissions to the db which is used from the project
 postgres=# CREATE DATABASE api_users;
-postgres=# GRANT ALL PRIVILEGES ON DATABASE test TO postgres;
+postgres=# GRANT ALL PRIVILEGES ON DATABASE api_users TO postgres;
 ```
 
 >Note: You can modify the db and users used in the present project from src/main/resources/application.properties.
