@@ -1,23 +1,43 @@
 package com.example.demo.controllers;
 
+import com.example.demo.models.UserRepository;
 import com.example.demo.models.Users;
 import com.example.demo.services.UserService;
+import com.example.demo.utils.JwtResponse;
+import com.example.demo.utils.JwtUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
 @RestController
 @RequestMapping(path = "api/user")
+@Slf4j
 public class UserController {
 
-    private final UserService userService;
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Autowired
-    public UserController (UserService userService) {
-        this.userService = userService;
-    }
+    private UserRepository userRepository;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @GetMapping
     public List<Users> getUsers() {
@@ -26,54 +46,75 @@ public class UserController {
 
     @GetMapping(path = "{userId}")
     public Optional<Users> getUser(@PathVariable("userId") Long userId) {
-        return this.userService.getUsers(userId);
+        return this.userService.getUser(userId);
     }
 
     @PostMapping
-    public void register(@RequestBody Users user) {
-        userService.addUser(user);
-    }
-
-    @DeleteMapping(path = "{userId}")
-    public void delete(@PathVariable("userId") Long userId) {
-        try{
-            userService.deleteUser(userId);
+    public ResponseEntity<?> register(@RequestBody Users user) {
+        try {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            this.userService.addUser(user);
+            URI uri = URI.create(
+                    ServletUriComponentsBuilder
+                            .fromCurrentContextPath()
+                            .path("/api/user").toUriString()
+            );
+            return ResponseEntity.created(uri).body("User created successfully");
         } catch (Exception e) {
-            System.out.println("User does not exist");
+            return ResponseEntity.badRequest().body(e.toString());
         }
     }
 
-    //    Not working
+    @DeleteMapping(path = "{userId}")
+    public ResponseEntity<?> delete(@PathVariable("userId") Long userId) {
+        try{
+            this.userService.deleteUser(userId);
+            return ResponseEntity.ok().body("User " + userId + " deleted successfully");
+        } catch (Exception e) {
+            log.info("User does not exist");
+            return ResponseEntity.badRequest().body("User " + userId + " does not exist");
+        }
+    }
+
     @PutMapping(path = "{userId}")
-    public void update(
+    public ResponseEntity<?> update(
             @PathVariable("userId") Long userId,
             @RequestBody(required = false) Users body
             ) {
         try {
-            userService.updateUser(
-                    userId,
+            this.userService.updateUser(
                     body.getUsername(),
                     body.getFullName(),
                     body.getEmail(),
-                    body.getBirthDate()
+                    body.getBirthDate(),
+                    passwordEncoder.encode(body.getPassword())
             );
+            return ResponseEntity.ok().body("User updated successfully");
         } catch (Exception e) {
-            System.out.println(e);
+            log.info(e.toString());
+            return ResponseEntity.badRequest().body(e.toString());
         }
     }
 
-    @RestController
-    @RequestMapping(path = "api/user/login")
-    public class LoginController {
-        @PostMapping
-        public void login(
-                @RequestBody Users body
-        ) {
-            try {
-                userService.login(body.getUsername(), body.getPassword());
-            } catch (Exception e) {
-                System.out.println(e);
-            }
+    @PostMapping("/login")
+    public ResponseEntity<?> login(
+            @RequestBody Users loginRequest
+    ) {
+        try {
+            log.info("pass: " + loginRequest.getPassword());
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getUsername(), loginRequest.getPassword()
+                    )
+            );
+        } catch (BadCredentialsException e) {
+            log.error(e.toString());
+            return ResponseEntity.badRequest().body("Invalid credentials");
         }
+        final Optional<Users> user = this.userRepository.findByUsername(
+                loginRequest.getUsername()
+        );
+        final String jwtToken = this.jwtUtil.generateToken(user.get());
+        return ResponseEntity.ok().body(new JwtResponse(jwtToken));
     }
 }

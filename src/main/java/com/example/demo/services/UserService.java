@@ -1,8 +1,14 @@
 package com.example.demo.services;
 
+import com.example.demo.models.Role;
+import com.example.demo.models.RoleRepository;
 import com.example.demo.models.UserRepository;
 import com.example.demo.models.Users;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -13,26 +19,28 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-@Service
+@Service @Slf4j @Transactional
 public class UserService {
 
     private final UserRepository userRepository;
-
+    private final RoleRepository roleRepository;
     @Autowired
-    public UserService (UserRepository userRepository) {
+    public UserService (UserRepository userRepository, RoleRepository roleRepository) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
     }
 
     public List<Users> getUsers() {
         return userRepository.findAll();
     }
 
-    public Optional<Users> getUsers(Long userId) {
+    public Optional<Users> getUser(Long userId) {
         return userRepository.findById(userId);
     }
 
     public void addUser(Users user) {
         userRepository.save(user);
+        addRoleToUser(user.getUsername(), "ROLE_USER");
     }
 
     public void deleteUser(Long userId) throws Exception {
@@ -45,20 +53,14 @@ public class UserService {
         }
     }
 
-    @Transactional
     public void updateUser(
-            Long userId,
             String username,
             String fullName,
             String email,
-            LocalDate birthDate
+            LocalDate birthDate,
+            String password
     ) throws Exception {
-        boolean exists = userRepository.existsById(userId);
-        if(!exists) {
-            throw new Exception("User does not exist");
-        }
-
-        Users user = userRepository.getReferenceById(userId);
+        Users user = userRepository.findByUsername(username).get();
 
         if (email != null)
             user.setEmail(email);
@@ -68,22 +70,13 @@ public class UserService {
             user.setFullName(fullName);
         if (birthDate != null)
             user.setBirthDate(birthDate);
+        if (password != null)
+            user.setPassword(password);
     }
 
-    // Token needs to be returned when login is successful, exception otherwise
-    public void login(String username, String password) throws Exception {
+    public void addRoleToUser(String username, String roleName) {
         Optional<Users> user = userRepository.findByUsername(username);
-        PasswordEncoder passwordEncoder =
-                PasswordEncoderFactories.createDelegatingPasswordEncoder();
-        String encodedPassword = passwordEncoder.encode(password);
-
-        if (user.isEmpty()) {
-            throw new Exception("User doesn't exist");
-        } else if (Objects.equals(user.get().getPassword(), encodedPassword)) {
-            System.out.println("Successfully logged in");
-        } else {
-            System.out.println("Invalid credentials");
-        }
+        Optional<Role> role = roleRepository.findByName(roleName);
+        user.get().getRoles().add(role.get());
     }
-
 }
