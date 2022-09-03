@@ -1,4 +1,4 @@
-package filters;
+package com.example.demo.filters;
 
 import com.example.demo.models.Users;
 import com.example.demo.services.CustomUserDetailService;
