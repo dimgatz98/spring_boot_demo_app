@@ -74,7 +74,8 @@ public class SecurityConfig  {
 
         http.authorizeRequests()
             .antMatchers(HttpMethod.POST, "/api/user/login").permitAll()
-            .antMatchers(HttpMethod.POST, "/api/user").permitAll()
+            .antMatchers(HttpMethod.POST, "/api/user/register").permitAll()
+            .antMatchers(HttpMethod.POST, "/api/user/refreshToken").permitAll()
             .anyRequest().authenticated();
 
         http.addFilterBefore(

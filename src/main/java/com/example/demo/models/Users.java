@@ -241,7 +241,7 @@ public class Users implements UserDetails {
                 ", email='" + email + '\'' +
                 ", username='" + username + '\'' +
                 ", fullName='" + fullName + '\'' +
-                ", passowrd='" + password + '\'' +
+                ", password='" + password + '\'' +
                 '}';
     }
 }

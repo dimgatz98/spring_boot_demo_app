@@ -1,12 +1,16 @@
 package com.example.demo.controllers;
 
+import com.example.demo.models.RefreshToken;
 import com.example.demo.models.UserRepository;
 import com.example.demo.models.Users;
+import com.example.demo.services.RefreshTokenService;
 import com.example.demo.services.UserService;
 import com.example.demo.utils.JwtResponse;
+import com.example.demo.utils.JwtTokenRefreshRequest;
 import com.example.demo.utils.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -15,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import javax.validation.Valid;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +44,9 @@ public class UserController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    RefreshTokenService refreshTokenService;
+
     @GetMapping
     public List<Users> getUsers() {
         return this.userService.getUsers();
@@ -49,7 +57,7 @@ public class UserController {
         return this.userService.getUser(userId);
     }
 
-    @PostMapping
+    @PostMapping(path = "/register")
     public ResponseEntity<?> register(@RequestBody Users user) {
         try {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -101,7 +109,6 @@ public class UserController {
             @RequestBody Users loginRequest
     ) {
         try {
-            log.info("pass: " + loginRequest.getPassword());
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getUsername(), loginRequest.getPassword()
@@ -114,7 +121,25 @@ public class UserController {
         final Optional<Users> user = this.userRepository.findByUsername(
                 loginRequest.getUsername()
         );
+
         final String jwtToken = this.jwtUtil.generateToken(user.get());
-        return ResponseEntity.ok().body(new JwtResponse(jwtToken));
+
+        final String refreshToken = refreshTokenService.createRefreshToken(user.get().getId()).getToken();
+
+        return ResponseEntity.ok().body(new JwtResponse(jwtToken, refreshToken));
+    }
+
+    @PostMapping("/refreshToken")
+    public ResponseEntity<?> refreshToken(@Valid @RequestBody JwtTokenRefreshRequest request) {
+        String requestRefreshToken = request.getRefreshToken();
+        return refreshTokenService.findByToken(requestRefreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    String token = jwtUtil.generateToken(user);
+                    return ResponseEntity.ok().body(new JwtResponse(token));
+                })
+                .orElseThrow(() -> new InvalidDataAccessApiUsageException("Refresh token not valid"));
     }
 }
+
